@@ -164,8 +164,8 @@ export default function App() {
       {page === "home" && (
         <div style={{ maxWidth:"900px", margin:"0 auto", padding:"24px 20px" }}>
           <div style={{ background:"linear-gradient(135deg,#1D9E75,#0F6E56)", borderRadius:"12px", padding:"36px 32px", color:"#fff", marginBottom:"24px" }}>
-            <h1 style={{ fontSize:"26px", fontWeight:"700", marginBottom:"8px", lineHeight:"1.3" }}>Find building materials in Thika — at the best price</h1>
-            <p style={{ fontSize:"14px", opacity:"0.85", marginBottom:"20px" }}>Compare prices from verified hardware shops, quarries and raw material suppliers. No middlemen.</p>
+            <h1 style={{ fontSize:"26px", fontWeight:"700", marginBottom:"8px", lineHeight:"1.3" }}>Find building materials near you — at the best price</h1>
+            <p style={{ fontSize:"14px", opacity:"0.85", marginBottom:"20px" }}> Compare prices from verified hardware shops, quarries and raw material suppliers across Kenya. No middlemen.</p>
             <div style={{ display:"flex", gap:"8px", maxWidth:"540px" }}>
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search cement, sand, ballast, steel..." style={{ flex:1, padding:"10px 14px", borderRadius:"8px", border:"none", fontSize:"14px", outline:"none" }} />
               <button style={{ padding:"10px 20px", background:"#fff", color:"#1D9E75", border:"none", borderRadius:"8px", fontWeight:"700", fontSize:"14px", cursor:"pointer" }}>Search</button>
@@ -227,7 +227,7 @@ export default function App() {
       {page === "quotes" && (
         <div style={{ maxWidth:"700px", margin:"0 auto", padding:"24px 20px" }}>
           <h2 style={{ fontSize:"18px", fontWeight:"700", marginBottom:"4px" }}>Request quotes from multiple suppliers</h2>
-          <p style={{ fontSize:"14px", color:"#888", marginBottom:"20px" }}>Fill in what you need — all matching suppliers in Thika will receive your request.</p>
+          <p style={{ fontSize:"14px", color:"#888", marginBottom:"20px" }}>Fill in what you need — all matching suppliers near you will receive your request.</p>
           {!quoteSubmitted ? (
             <div style={{ background:"#fff", border:"1px solid #eee", borderRadius:"12px", padding:"20px" }}>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px", marginBottom:"12px" }}>
@@ -273,7 +273,7 @@ export default function App() {
       {page === "supplier" && (
         <div style={{ maxWidth:"600px", margin:"0 auto", padding:"24px 20px" }}>
           <h2 style={{ fontSize:"18px", fontWeight:"700", marginBottom:"4px" }}>List your shop on Jenga Hub</h2>
-          <p style={{ fontSize:"14px", color:"#888", marginBottom:"20px" }}>Reach builders looking for materials in Thika. Free for the first 3 months.</p>
+          <p style={{ fontSize:"14px", color:"#888", marginBottom:"20px" }}>Reach builders looking for materials near you. Free for the first 3 months.</p>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"10px", marginBottom:"24px" }}>
             {[
               { name:"Starter", price:"Free", sub:"3 months", feats:["Shop profile","Up to 10 products","Buyer inquiries"] },
