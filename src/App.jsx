@@ -1,220 +1,167 @@
-import { useState, useEffect } from "react";
-import { supabase } from "./supabase";
+import { useState } from "react";
 
-const categories = [
-  { key:"all", label:"All materials", icon:"🧱" },
-  { key:"cement", label:"Cement & blocks", icon:"🏗️" },
-  { key:"sand", label:"Sand & ballast", icon:"⛏️" },
-  { key:"steel", label:"Steel & iron", icon:"🔩" },
-  { key:"timber", label:"Timber & roofing", icon:"🪵" },
-  { key:"stones", label:"Quarry stones", icon:"🪨" },
-  { key:"paint", label:"Paint & finishes", icon:"🎨" },
+const SUPPLIERS = [
+  { id:1, name:"Kamau Hardware", loc:"Thika Town", avatar:"KH", verified:true, open:true, cat:"cement", rating:4.8, reviews:63, phone:"0712345678", whatsapp:"254712345678", items:[{n:"Cement (Bamburi 50kg)",p:"KES 820"},{n:"River sand (tonne)",p:"KES 1,800"},{n:"Y12 steel (tonne)",p:"KES 115,000"}]},
+  { id:2, name:"Githurai Builders Mart", loc:"Thika Rd, Km 18", avatar:"GB", verified:true, open:true, cat:"cement", rating:4.5, reviews:41, phone:"0723456789", whatsapp:"254723456789", items:[{n:"Cement (Mombasa 50kg)",p:"KES 800"},{n:"Hollow blocks (6 inch)",p:"KES 55/pc"},{n:"Ballast (tonne)",p:"KES 2,200"}]},
+  { id:3, name:"Muigai Sand & Ballast", loc:"Thika River Road", avatar:"MS", verified:false, open:true, cat:"sand", rating:4.2, reviews:28, phone:"0734567890", whatsapp:"254734567890", items:[{n:"River sand (tonne)",p:"KES 1,600"},{n:"Ballast (tonne)",p:"KES 2,000"},{n:"Hardcore (tonne)",p:"KES 1,400"}]},
+  { id:4, name:"Thika Steel Centre", loc:"Industrial Area, Thika", avatar:"TS", verified:true, open:false, cat:"steel", rating:4.7, reviews:55, phone:"0745678901", whatsapp:"254745678901", items:[{n:"Y12 deformed bar (tonne)",p:"KES 112,000"},{n:"Y16 deformed bar (tonne)",p:"KES 113,500"},{n:"Iron sheets (28G 8ft)",p:"KES 1,950/pc"}]},
+  { id:5, name:"Njogu Quarry & Stones", loc:"Gatundu Road, Thika", avatar:"NQ", verified:true, open:true, cat:"stones", rating:4.4, reviews:19, phone:"0756789012", whatsapp:"254756789012", items:[{n:"Quarry stones (tonne)",p:"KES 3,200"},{n:"Chippings (tonne)",p:"KES 2,800"},{n:"Dust (tonne)",p:"KES 1,200"}]},
+  { id:6, name:"Timber World Thika", loc:"Kenyatta Hwy, Thika", avatar:"TW", verified:true, open:true, cat:"timber", rating:4.6, reviews:37, phone:"0767890123", whatsapp:"254767890123", items:[{n:"Timber 2x3 (piece)",p:"KES 320"},{n:"Roofing sheets (box profile)",p:"KES 1,750/pc"},{n:"Fascia board (piece)",p:"KES 580"}]},
 ];
 
-const allMaterials = [
-  "Cement","Sand","Ballast","Quarry stones","Steel bars","Iron sheets",
-  "Timber","Roofing sheets","Hollow blocks","Paint","Tiles","Plumbing fittings",
-  "Hardcore","Chippings","Fascia boards","Wire mesh"
+const CATS = [
+  {id:"all",label:"All materials",icon:"🏗️"},
+  {id:"cement",label:"Cement & blocks",icon:"🧱"},
+  {id:"sand",label:"Sand & ballast",icon:"⛏️"},
+  {id:"steel",label:"Steel & iron",icon:"🔩"},
+  {id:"timber",label:"Timber & roofing",icon:"🪵"},
+  {id:"stones",label:"Quarry stones",icon:"🪨"},
 ];
 
-const defaultQuote = { material:"Cement (bags)", qty:"", location:"", phone:"", notes:"" };
-const defaultReg = { name:"", town:"Thika", phone:"", whatsapp:"", materials:[] };
+const s = {
+  app:{fontFamily:"system-ui,sans-serif",minHeight:"100vh",background:"#f5f5f0",color:"#1a1a1a"},
+  topbar:{background:"#fff",borderBottom:"1px solid #e8e8e0",padding:"0 20px",display:"flex",alignItems:"center",justifyContent:"space-between",height:"56px",position:"sticky",top:0,zIndex:100},
+  logo:{fontSize:"20px",fontWeight:"600",color:"#1D9E75"},
+  nav:{display:"flex",gap:"4px"},
+  navBtn:(active)=>({padding:"6px 14px",borderRadius:"8px",fontSize:"13px",cursor:"pointer",border:"none",background:active?"#f0f0e8":"none",color:active?"#1a1a1a":"#666",fontWeight:active?"500":"400"}),
+  page:{maxWidth:"880px",margin:"0 auto",padding:"24px 16px"},
+  hero:{background:"linear-gradient(135deg,#1D9E75,#0F6E56)",borderRadius:"12px",padding:"36px 28px",color:"#fff",marginBottom:"24px"},
+  h1:{fontSize:"26px",fontWeight:"600",marginBottom:"8px",lineHeight:"1.2"},
+  heroP:{fontSize:"14px",opacity:"0.85",marginBottom:"20px"},
+  searchRow:{display:"flex",gap:"8px",flexWrap:"wrap"},
+  searchInput:{flex:"1",minWidth:"200px",padding:"10px 14px",borderRadius:"8px",border:"none",fontSize:"14px",outline:"none"},
+  searchSelect:{padding:"10px 12px",borderRadius:"8px",border:"none",fontSize:"14px",background:"#fff",cursor:"pointer"},
+  searchBtn:{padding:"10px 20px",background:"#fff",color:"#1D9E75",border:"none",borderRadius:"8px",fontWeight:"600",fontSize:"14px",cursor:"pointer"},
+  cats:{display:"flex",gap:"8px",flexWrap:"wrap",marginBottom:"20px"},
+  cat:(active)=>({padding:"7px 14px",borderRadius:"20px",border:`1px solid ${active?"#1D9E75":"#ddd"}`,fontSize:"13px",cursor:"pointer",background:active?"#e1f5ee":"#fff",color:active?"#0F6E56":"#555",display:"flex",alignItems:"center",gap:"6px"}),
+  grid:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:"12px",marginBottom:"24px"},
+  card:{background:"#fff",border:"1px solid #e8e8e0",borderRadius:"12px",padding:"16px",cursor:"pointer",transition:"border-color 0.15s"},
+  cardTop:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:"12px"},
+  avatar:{width:"42px",height:"42px",borderRadius:"8px",background:"#e1f5ee",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:"600",color:"#0F6E56",flexShrink:0},
+  shopInfo:{flex:1,marginLeft:"10px"},
+  shopName:{fontSize:"14px",fontWeight:"600",marginBottom:"2px"},
+  shopLoc:{fontSize:"12px",color:"#888"},
+  badges:{display:"flex",flexDirection:"column",gap:"4px",alignItems:"flex-end"},
+  badge:(color)=>({fontSize:"11px",padding:"2px 7px",borderRadius:"10px",fontWeight:"500",background:color==="green"?"#e1f5ee":color==="open"?"#eaf3de":"#f0f0e8",color:color==="green"?"#0F6E56":color==="open"?"#3B6D11":"#666"}),
+  stars:{color:"#EF9F27",fontSize:"12px"},
+  priceList:{borderTop:"1px solid #f0f0e8",paddingTop:"10px",display:"flex",flexDirection:"column",gap:"6px"},
+  priceRow:{display:"flex",justifyContent:"space-between",fontSize:"13px"},
+  priceItem:{color:"#666"},
+  priceVal:{fontWeight:"500"},
+  actions:{display:"flex",gap:"6px",marginTop:"12px"},
+  actionBtn:(primary)=>({flex:1,padding:"7px",borderRadius:"8px",fontSize:"12px",cursor:"pointer",border:`1px solid ${primary?"#1D9E75":"#ddd"}`,background:primary?"#1D9E75":"none",color:primary?"#fff":"#555",display:"flex",alignItems:"center",justifyContent:"center",gap:"4px"}),
+  sectionTitle:{fontSize:"16px",fontWeight:"600",marginBottom:"12px",marginTop:"4px"},
+  statRow:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"12px",marginBottom:"24px"},
+  statCard:{background:"#fff",border:"1px solid #e8e8e0",borderRadius:"10px",padding:"14px 16px"},
+  statVal:{fontSize:"24px",fontWeight:"600",marginBottom:"2px",color:"#1D9E75"},
+  statLbl:{fontSize:"12px",color:"#888"},
+  quoteBox:{background:"#fff",border:"1px solid #e8e8e0",borderRadius:"12px",padding:"20px",marginBottom:"24px"},
+  formGrid:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px",marginBottom:"12px"},
+  formGroup:{display:"flex",flexDirection:"column",gap:"5px"},
+  label:{fontSize:"12px",color:"#666",fontWeight:"500"},
+  input:{padding:"9px 12px",borderRadius:"8px",border:"1px solid #ddd",fontSize:"14px",outline:"none"},
+  textarea:{padding:"9px 12px",borderRadius:"8px",border:"1px solid #ddd",fontSize:"14px",outline:"none",minHeight:"80px",resize:"vertical"},
+  submitBtn:{width:"100%",padding:"11px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:"8px",fontSize:"14px",fontWeight:"600",cursor:"pointer"},
+  quoteItem:{background:"#fff",border:"1px solid #e8e8e0",borderRadius:"12px",padding:"14px 16px",display:"flex",alignItems:"center",gap:"12px",marginBottom:"8px"},
+  quoteNum:{fontSize:"20px",fontWeight:"700",color:"#1D9E75",minWidth:"36px"},
+  regBox:{background:"#fff",border:"1px solid #e8e8e0",borderRadius:"12px",padding:"20px",maxWidth:"540px"},
+  steps:{display:"flex",gap:"6px",marginBottom:"20px"},
+  step:(done)=>({flex:1,height:"4px",borderRadius:"2px",background:done?"#1D9E75":"#e8e8e0"}),
+  pricingGrid:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"12px",marginBottom:"24px"},
+  pricingCard:(featured)=>({background:"#fff",border:`${featured?"2px solid #1D9E75":"1px solid #e8e8e0"}`,borderRadius:"12px",padding:"16px"}),
+  planName:{fontSize:"13px",fontWeight:"600",marginBottom:"4px"},
+  planPrice:{fontSize:"22px",fontWeight:"700",color:"#1D9E75",marginBottom:"8px"},
+  planFeat:{fontSize:"12px",color:"#666",lineHeight:"2"},
+  toast:{position:"fixed",bottom:"20px",right:"20px",background:"#1D9E75",color:"#fff",padding:"10px 18px",borderRadius:"8px",fontSize:"13px",zIndex:999},
+};
 
 export default function App() {
   const [page, setPage] = useState("home");
   const [cat, setCat] = useState("all");
+  const [toast, setToast] = useState(null);
+  const [step, setStep] = useState(1);
   const [search, setSearch] = useState("");
-  const [toast, setToast] = useState("");
-  const [suppliers, setSuppliers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [quoteForm, setQuoteForm] = useState(defaultQuote);
-  const [quoteSubmitted, setQuoteSubmitted] = useState(false);
-  const [quoteLoading, setQuoteLoading] = useState(false);
-  const [regForm, setRegForm] = useState(defaultReg);
-  const [regStep, setRegStep] = useState(1);
-  const [regLoading, setRegLoading] = useState(false);
 
-  // Supplier dashboard state
-  const [supplierUser, setSupplierUser] = useState(null);
-  const [loginForm, setLoginForm] = useState({ phone:"", pin:"" });
-  const [loginError, setLoginError] = useState("");
-  const [loginLoading, setLoginLoading] = useState(false);
-  const [dashProducts, setDashProducts] = useState([]);
-  const [dashQuotes, setDashQuotes] = useState([]);
-  const [newProduct, setNewProduct] = useState({ name:"", price:"" });
-  const [addingProduct, setAddingProduct] = useState(false);
-  const [dashLoading, setDashLoading] = useState(false);
-
-  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
-
-  useEffect(() => { loadSuppliers(); }, []);
-
-  const loadSuppliers = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.from("suppliers").select("*, products(*)").order("created_at", { ascending:false });
-      if (error) throw error;
-      setSuppliers(data || []);
-    } catch (err) {
-      console.error(err);
-      setSuppliers([]);
-    }
-    setLoading(false);
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
   };
 
-  const loadDashboard = async (supplierId) => {
-    setDashLoading(true);
-    const { data: prods } = await supabase.from("products").select("*").eq("supplier_id", supplierId);
-    const { data: quotes } = await supabase.from("quotes").select("*").order("created_at", { ascending:false }).limit(10);
-    setDashProducts(prods || []);
-    setDashQuotes(quotes || []);
-    setDashLoading(false);
-  };
-
-  const handleLogin = async () => {
-    if (!loginForm.phone || !loginForm.pin) { setLoginError("Please enter your phone number and PIN"); return; }
-    setLoginLoading(true);
-    setLoginError("");
-    const { data, error } = await supabase.from("suppliers").select("*").eq("phone", loginForm.phone).eq("pin", loginForm.pin).single();
-    setLoginLoading(false);
-    if (error || !data) { setLoginError("Phone number or PIN is incorrect. Please try again."); return; }
-    setSupplierUser(data);
-    loadDashboard(data.id);
-  };
-
-  const handleLogout = () => { setSupplierUser(null); setLoginForm({ phone:"", pin:"" }); setPage("supplier"); };
-
-  const toggleOpen = async () => {
-    const { error } = await supabase.from("suppliers").update({ open: !supplierUser.open }).eq("id", supplierUser.id);
-    if (!error) { setSupplierUser({ ...supplierUser, open: !supplierUser.open }); showToast(supplierUser.open ? "Shop marked as Closed" : "Shop marked as Open"); }
-  };
-
-  const addProduct = async () => {
-    if (!newProduct.name || !newProduct.price) { showToast("Please enter product name and price"); return; }
-    setAddingProduct(true);
-    const { data, error } = await supabase.from("products").insert({ supplier_id: supplierUser.id, name: newProduct.name, price: newProduct.price }).select().single();
-    setAddingProduct(false);
-    if (error) { showToast("Error adding product. Try again."); return; }
-    setDashProducts([...dashProducts, data]);
-    setNewProduct({ name:"", price:"" });
-    showToast("Product added!");
-    loadSuppliers();
-  };
-
-  const deleteProduct = async (productId) => {
-    const { error } = await supabase.from("products").delete().eq("id", productId);
-    if (!error) { setDashProducts(dashProducts.filter(p => p.id !== productId)); showToast("Product removed."); loadSuppliers(); }
-  };
-
-  const submitQuote = async () => {
-    if (!quoteForm.qty || !quoteForm.location || !quoteForm.phone) { showToast("Please fill in quantity, location and phone number"); return; }
-    setQuoteLoading(true);
-    const { error } = await supabase.from("quotes").insert({ material:quoteForm.material, quantity:quoteForm.qty, location:quoteForm.location, phone:quoteForm.phone, notes:quoteForm.notes });
-    setQuoteLoading(false);
-    if (error) { showToast("Error submitting. Please try again."); return; }
-    setQuoteSubmitted(true);
-  };
-
-  const toggleMaterial = (mat) => {
-    setRegForm(prev => ({ ...prev, materials: prev.materials.includes(mat) ? prev.materials.filter(m => m !== mat) : [...prev.materials, mat] }));
-  };
-
-  const submitReg = async () => {
-    if (!regForm.name || !regForm.phone) { showToast("Please fill in shop name and phone number"); return; }
-    if (regForm.materials.length === 0) { showToast("Please select at least one material you sell"); return; }
-    setRegLoading(true);
-    const category = regForm.materials[0].toLowerCase().includes("cement") ? "cement"
-      : regForm.materials[0].toLowerCase().includes("sand") || regForm.materials[0].toLowerCase().includes("ballast") ? "sand"
-      : regForm.materials[0].toLowerCase().includes("steel") || regForm.materials[0].toLowerCase().includes("iron") ? "steel"
-      : regForm.materials[0].toLowerCase().includes("timber") || regForm.materials[0].toLowerCase().includes("roof") ? "timber"
-      : regForm.materials[0].toLowerCase().includes("stone") ? "stones" : "cement";
-    const { error } = await supabase.from("suppliers").insert({ name:regForm.name, town:regForm.town, phone:regForm.phone, whatsapp:regForm.whatsapp||regForm.phone, verified:false, open:true, category, rating:0, reviews:0, pin:"1234" });
-    setRegLoading(false);
-    if (error) { showToast("Error submitting. Please try again."); console.error(error); return; }
-    setRegStep(2);
-    loadSuppliers();
-  };
-
-  const filtered = suppliers.filter(s => {
-    const matchCat = cat === "all" || s.category === cat;
-    const matchSearch = s.name.toLowerCase().includes(search.toLowerCase()) || (s.products||[]).some(p => p.name.toLowerCase().includes(search.toLowerCase()));
-    return matchCat && matchSearch;
-  });
-
-  const inp = (extra={}) => ({ width:"100%", padding:"9px 12px", borderRadius:"8px", border:"1px solid #ddd", fontSize:"14px", boxSizing:"border-box", fontFamily:"system-ui,sans-serif", ...extra });
+  const filtered = SUPPLIERS.filter(s =>
+    (cat === "all" || s.cat === cat) &&
+    (search === "" || s.name.toLowerCase().includes(search.toLowerCase()) || s.items.some(i => i.n.toLowerCase().includes(search.toLowerCase())))
+  );
 
   return (
-    <div style={{ fontFamily:"system-ui,sans-serif", minHeight:"100vh", background:"#f5f5f5", color:"#1a1a1a" }}>
-
+    <div style={s.app}>
       {/* Topbar */}
-      <div style={{ background:"#fff", borderBottom:"1px solid #eee", padding:"0 20px", display:"flex", alignItems:"center", justifyContent:"space-between", height:"56px", position:"sticky", top:0, zIndex:100 }}>
-        <div style={{ fontSize:"20px", fontWeight:"700", color:"#1D9E75", cursor:"pointer" }} onClick={() => setPage("home")}>Jenga<span style={{ color:"#1a1a1a" }}>Hub</span></div>
-        <div style={{ display:"flex", gap:"4px" }}>
-          {["home","quotes","supplier","dashboard"].map(p => (
-            <button key={p} onClick={() => setPage(p)} style={{ padding:"6px 14px", borderRadius:"8px", border:"none", background: page===p ? "#f0f0f0" : "none", fontWeight: page===p ? "600" : "400", cursor:"pointer", fontSize:"13px", color: page===p ? "#1a1a1a" : "#666" }}>
-              {p==="home" ? "Find suppliers" : p==="quotes" ? "Get quotes" : p==="supplier" ? "List your shop" : "Supplier login"}
-            </button>
-          ))}
+      <div style={s.topbar}>
+        <div style={s.logo}>Jenga<span style={{color:"#1a1a1a"}}>Hub</span></div>
+        <div style={s.nav}>
+          <button style={s.navBtn(page==="home")} onClick={()=>setPage("home")}>Find suppliers</button>
+          <button style={s.navBtn(page==="quotes")} onClick={()=>setPage("quotes")}>Get quotes</button>
+          <button style={s.navBtn(page==="supplier")} onClick={()=>setPage("supplier")}>List your shop</button>
         </div>
-        {supplierUser && <button onClick={handleLogout} style={{ padding:"7px 16px", borderRadius:"8px", background:"#f5f5f5", color:"#666", border:"1px solid #ddd", cursor:"pointer", fontSize:"13px" }}>Logout</button>}
-        {!supplierUser && <button onClick={() => setPage("supplier")} style={{ padding:"7px 16px", borderRadius:"8px", background:"#1D9E75", color:"#fff", border:"none", fontWeight:"600", cursor:"pointer", fontSize:"13px" }}>Get started</button>}
+        <div style={{display:"flex",gap:"8px"}}>
+          <button style={{...s.actionBtn(false),flex:"none",padding:"7px 14px"}} onClick={()=>showToast("Login coming soon!")}>Sign in</button>
+          <button style={{...s.actionBtn(true),flex:"none",padding:"7px 14px"}} onClick={()=>showToast("Registration coming soon!")}>Get started</button>
+        </div>
       </div>
 
-      {/* HOME */}
-      {page === "home" && (
-        <div style={{ maxWidth:"900px", margin:"0 auto", padding:"24px 20px" }}>
-          <div style={{ background:"linear-gradient(135deg,#1D9E75,#0F6E56)", borderRadius:"12px", padding:"36px 32px", color:"#fff", marginBottom:"24px" }}>
-            <h1 style={{ fontSize:"26px", fontWeight:"700", marginBottom:"8px", lineHeight:"1.3" }}>Find building materials near you — at the best price</h1>
-            <p style={{ fontSize:"14px", opacity:"0.85", marginBottom:"20px" }}> Compare prices from verified hardware shops, quarries and raw material suppliers across Kenya. No middlemen.</p>
-            <div style={{ display:"flex", gap:"8px", maxWidth:"540px" }}>
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search cement, sand, ballast, steel..." style={{ flex:1, padding:"10px 14px", borderRadius:"8px", border:"none", fontSize:"14px", outline:"none" }} />
-              <button style={{ padding:"10px 20px", background:"#fff", color:"#1D9E75", border:"none", borderRadius:"8px", fontWeight:"700", fontSize:"14px", cursor:"pointer" }}>Search</button>
+      {/* HOME PAGE */}
+      {page==="home" && (
+        <div style={s.page}>
+          <div style={s.hero}>
+            <div style={s.h1}>Find building materials near you — at the best price</div>
+            <div style={s.heroP}>Compare prices from verified hardware shops, quarries, and raw material suppliers in Thika. No middlemen.</div>
+            <div style={s.searchRow}>
+              <input style={s.searchInput} placeholder="Search cement, sand, ballast, steel..." value={search} onChange={e=>setSearch(e.target.value)} />
+              <select style={s.searchSelect}><option>Thika</option><option>Ruiru</option><option>Juja</option></select>
+              <button style={s.searchBtn}>Search</button>
             </div>
           </div>
-          <div style={{ display:"flex", gap:"8px", flexWrap:"wrap", marginBottom:"20px" }}>
-            {categories.map(c => (
-              <button key={c.key} onClick={() => setCat(c.key)} style={{ padding:"7px 14px", borderRadius:"20px", border: cat===c.key ? "1.5px solid #1D9E75" : "1px solid #ddd", background: cat===c.key ? "#E1F5EE" : "#fff", color: cat===c.key ? "#0F6E56" : "#555", fontSize:"13px", cursor:"pointer", fontWeight: cat===c.key ? "600" : "400" }}>
-                {c.icon} {c.label}
+
+          <div style={s.cats}>
+            {CATS.map(c=>(
+              <button key={c.id} style={s.cat(cat===c.id)} onClick={()=>setCat(c.id)}>
+                <span>{c.icon}</span>{c.label}
               </button>
             ))}
           </div>
-          {loading ? (
-            <div style={{ textAlign:"center", padding:"40px", color:"#999" }}>⏳ Loading suppliers...</div>
+
+          {filtered.length===0 ? (
+            <div style={{textAlign:"center",padding:"40px",color:"#aaa"}}>No suppliers found. Try a different search or category.</div>
           ) : (
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:"12px" }}>
-              {filtered.length === 0 && <div style={{ gridColumn:"1/-1", textAlign:"center", padding:"40px", color:"#999" }}>No suppliers found.</div>}
-              {filtered.map((sup, idx) => (
-                <div key={sup.id||idx} style={{ background:"#fff", border:"1px solid #eee", borderRadius:"12px", padding:"16px" }}>
-                  <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:"10px" }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-                      <div style={{ width:"42px", height:"42px", borderRadius:"8px", background:"#E1F5EE", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:"700", color:"#0F6E56", fontSize:"14px", flexShrink:0 }}>
-                        {sup.name.split(" ").map(w=>w[0]).slice(0,2).join("")}
-                      </div>
-                      <div>
-                        <div style={{ fontWeight:"600", fontSize:"14px" }}>{sup.name}</div>
-                        <div style={{ fontSize:"12px", color:"#888" }}>📍 {sup.town}</div>
-                      </div>
+            <div style={s.grid}>
+              {filtered.map(sup=>(
+                <div key={sup.id} style={s.card}>
+                  <div style={s.cardTop}>
+                    <div style={s.avatar}>{sup.avatar}</div>
+                    <div style={s.shopInfo}>
+                      <div style={s.shopName}>{sup.name}</div>
+                      <div style={s.shopLoc}>📍 {sup.loc}</div>
                     </div>
-                    <div style={{ display:"flex", flexDirection:"column", gap:"3px", alignItems:"flex-end" }}>
-                      {sup.verified && <span style={{ fontSize:"11px", background:"#E1F5EE", color:"#0F6E56", padding:"2px 7px", borderRadius:"8px", fontWeight:"600" }}>✓ Verified</span>}
-                      <span style={{ fontSize:"11px", background: sup.open ? "#EAF3DE" : "#f5f5f5", color: sup.open ? "#3B6D11" : "#999", padding:"2px 7px", borderRadius:"8px" }}>{sup.open ? "Open" : "Closed"}</span>
+                    <div style={s.badges}>
+                      {sup.verified && <span style={s.badge("green")}>✓ Verified</span>}
+                      <span style={s.badge(sup.open?"open":"closed")}>{sup.open?"Open":"Closed"}</span>
                     </div>
                   </div>
-                  {sup.rating > 0 && <div style={{ fontSize:"12px", color:"#888", marginBottom:"10px" }}>⭐ {sup.rating} ({sup.reviews} reviews)</div>}
-                  {(sup.products||[]).length > 0 && (
-                    <div style={{ borderTop:"1px solid #f0f0f0", paddingTop:"10px", display:"flex", flexDirection:"column", gap:"6px", marginBottom:"12px" }}>
-                      {(sup.products||[]).map((item,i) => (
-                        <div key={i} style={{ display:"flex", justifyContent:"space-between", fontSize:"13px" }}>
-                          <span style={{ color:"#666" }}>{item.name}</span>
-                          <span style={{ fontWeight:"600" }}>{item.price}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div style={{ display:"flex", gap:"6px" }}>
-                    <a href={`https://wa.me/${sup.whatsapp}`} target="_blank" rel="noreferrer" style={{ flex:1, padding:"7px", borderRadius:"8px", border:"1px solid #ddd", fontSize:"12px", textAlign:"center", textDecoration:"none", color:"#555" }}>💬 WhatsApp</a>
-                    <a href={`tel:${sup.phone}`} style={{ flex:1, padding:"7px", borderRadius:"8px", border:"1px solid #ddd", fontSize:"12px", textAlign:"center", textDecoration:"none", color:"#555" }}>📞 Call</a>
-                    <button onClick={() => setPage("quotes")} style={{ flex:1, padding:"7px", borderRadius:"8px", border:"none", background:"#1D9E75", color:"#fff", fontSize:"12px", cursor:"pointer", fontWeight:"600" }}>Get quote</button>
+                  <div style={{...s.stars,marginBottom:"8px"}}>
+                    {"★".repeat(Math.floor(sup.rating))}{"☆".repeat(5-Math.floor(sup.rating))}
+                    <span style={{color:"#888",fontSize:"12px",marginLeft:"4px"}}>{sup.rating} ({sup.reviews} reviews)</span>
+                  </div>
+                  <div style={s.priceList}>
+                    {sup.items.map((item,i)=>(
+                      <div key={i} style={s.priceRow}>
+                        <span style={s.priceItem}>{item.n}</span>
+                        <span style={s.priceVal}>{item.p}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={s.actions}>
+                    <button style={s.actionBtn(false)} onClick={()=>window.open(`https://wa.me/${sup.whatsapp}`)}>💬 WhatsApp</button>
+                    <button style={s.actionBtn(false)} onClick={()=>window.open(`tel:${sup.phone}`)}>📞 Call</button>
+                    <button style={s.actionBtn(true)} onClick={()=>showToast("Quote request sent to "+sup.name+"!")}>Get quote</button>
                   </div>
                 </div>
               ))}
@@ -223,244 +170,129 @@ export default function App() {
         </div>
       )}
 
-      {/* QUOTES */}
-      {page === "quotes" && (
-        <div style={{ maxWidth:"700px", margin:"0 auto", padding:"24px 20px" }}>
-          <h2 style={{ fontSize:"18px", fontWeight:"700", marginBottom:"4px" }}>Request quotes from multiple suppliers</h2>
-          <p style={{ fontSize:"14px", color:"#888", marginBottom:"20px" }}>Fill in what you need — all matching suppliers near you will receive your request.</p>
-          {!quoteSubmitted ? (
-            <div style={{ background:"#fff", border:"1px solid #eee", borderRadius:"12px", padding:"20px" }}>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px", marginBottom:"12px" }}>
-                <div>
-                  <label style={{ fontSize:"12px", color:"#888", fontWeight:"600", display:"block", marginBottom:"4px" }}>Material needed</label>
-                  <select value={quoteForm.material} onChange={e => setQuoteForm({...quoteForm, material:e.target.value})} style={inp()}>
-                    <option>Cement (bags)</option><option>River sand (tonnes)</option><option>Ballast (tonnes)</option><option>Quarry stones (tonnes)</option><option>Steel Y12 (tonnes)</option><option>Roofing sheets</option><option>Timber (pieces)</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ fontSize:"12px", color:"#888", fontWeight:"600", display:"block", marginBottom:"4px" }}>Quantity</label>
-                  <input type="number" placeholder="e.g. 200" value={quoteForm.qty} onChange={e => setQuoteForm({...quoteForm, qty:e.target.value})} style={inp()} />
-                </div>
-                <div style={{ gridColumn:"1/-1" }}>
-                  <label style={{ fontSize:"12px", color:"#888", fontWeight:"600", display:"block", marginBottom:"4px" }}>Your phone number</label>
-                  <input placeholder="07xx xxx xxx" value={quoteForm.phone} onChange={e => setQuoteForm({...quoteForm, phone:e.target.value})} style={inp()} />
-                </div>
-                <div style={{ gridColumn:"1/-1" }}>
-                  <label style={{ fontSize:"12px", color:"#888", fontWeight:"600", display:"block", marginBottom:"4px" }}>Delivery location</label>
-                  <input placeholder="e.g. Thika, near Blue Post Hotel" value={quoteForm.location} onChange={e => setQuoteForm({...quoteForm, location:e.target.value})} style={inp()} />
-                </div>
-                <div style={{ gridColumn:"1/-1" }}>
-                  <label style={{ fontSize:"12px", color:"#888", fontWeight:"600", display:"block", marginBottom:"4px" }}>Additional notes (optional)</label>
-                  <textarea placeholder="e.g. need delivery included..." value={quoteForm.notes} onChange={e => setQuoteForm({...quoteForm, notes:e.target.value})} style={inp({ minHeight:"80px", resize:"vertical" })} />
+      {/* QUOTES PAGE */}
+      {page==="quotes" && (
+        <div style={s.page}>
+          <div style={s.statRow}>
+            <div style={s.statCard}><div style={s.statVal}>6</div><div style={s.statLbl}>Suppliers in Thika</div></div>
+            <div style={s.statCard}><div style={s.statVal}>1</div><div style={s.statLbl}>Town covered</div></div>
+            <div style={s.statCard}><div style={s.statVal}>Free</div><div style={s.statLbl}>To get quotes</div></div>
+          </div>
+
+          <div style={s.sectionTitle}>Request quotes from multiple suppliers at once</div>
+          <div style={s.quoteBox}>
+            <div style={s.formGrid}>
+              <div style={s.formGroup}>
+                <label style={s.label}>Material needed</label>
+                <select style={s.input}><option>Cement (bags)</option><option>River sand (tonnes)</option><option>Ballast (tonnes)</option><option>Quarry stones (tonnes)</option><option>Steel Y12 (tonnes)</option><option>Roofing sheets</option><option>Timber (pieces)</option></select>
+              </div>
+              <div style={s.formGroup}>
+                <label style={s.label}>Quantity</label>
+                <input style={s.input} type="number" placeholder="e.g. 200" />
+              </div>
+              <div style={s.formGroup}>
+                <label style={s.label}>Delivery location</label>
+                <input style={s.input} type="text" placeholder="e.g. Thika, near Blue Post" />
+              </div>
+              <div style={s.formGroup}>
+                <label style={s.label}>Needed by</label>
+                <input style={s.input} type="date" />
+              </div>
+              <div style={{...s.formGroup,gridColumn:"1/-1"}}>
+                <label style={s.label}>Additional notes (optional)</label>
+                <textarea style={s.textarea} placeholder="e.g. need delivery included, or I can pick up..." />
+              </div>
+            </div>
+            <button style={s.submitBtn} onClick={()=>showToast("Quote request sent to all matching suppliers!")}>Send to all matching suppliers →</button>
+          </div>
+
+          <div style={s.sectionTitle}>Sample quotes — 200 bags of cement in Thika</div>
+          {[
+            {rank:1,name:"Githurai Builders Mart",price:"KES 160,000",unit:"200 bags @ KES 800",rating:4.5,delivery:"Pick-up only",tags:["Mombasa cement","Verified"]},
+            {rank:2,name:"Kamau Hardware",price:"KES 164,000",unit:"200 bags @ KES 820",rating:4.8,delivery:"Delivery available — KES 3,500",tags:["Bamburi","Verified"]},
+            {rank:3,name:"Thika Cement Depot",price:"KES 158,000",unit:"200 bags @ KES 790",rating:3.9,delivery:"Delivery available — KES 4,000",tags:["Bamburi"]},
+          ].map(q=>(
+            <div key={q.rank} style={s.quoteItem}>
+              <div style={s.quoteNum}>#{q.rank}</div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:"14px",fontWeight:"600"}}>{q.name} — <span style={{color:"#1D9E75"}}>{q.price}</span></div>
+                <div style={{fontSize:"12px",color:"#888",marginTop:"2px"}}>{q.unit} · {q.delivery}</div>
+                <div style={{marginTop:"6px",display:"flex",gap:"4px"}}>
+                  {q.tags.map(t=><span key={t} style={{fontSize:"11px",padding:"2px 8px",borderRadius:"8px",background:"#f0f0e8",color:"#666"}}>{t}</span>)}
                 </div>
               </div>
-              <button onClick={submitQuote} disabled={quoteLoading} style={{ width:"100%", padding:"11px", background:"#1D9E75", color:"#fff", border:"none", borderRadius:"8px", fontWeight:"700", fontSize:"14px", cursor:"pointer", opacity:quoteLoading?0.7:1 }}>
-                {quoteLoading ? "Sending..." : "Send to all matching suppliers →"}
-              </button>
+              <button style={{...s.actionBtn(true),flex:"none",padding:"8px 14px",whiteSpace:"nowrap"}} onClick={()=>showToast("Contacting "+q.name+"!")}>Accept quote</button>
             </div>
-          ) : (
-            <div style={{ background:"#fff", border:"1px solid #eee", borderRadius:"12px", padding:"32px", textAlign:"center" }}>
-              <div style={{ fontSize:"48px", marginBottom:"12px" }}>✅</div>
-              <h3 style={{ fontSize:"16px", fontWeight:"700", marginBottom:"6px" }}>Quote request sent!</h3>
-              <p style={{ fontSize:"14px", color:"#888", marginBottom:"20px" }}>Your request for <strong>{quoteForm.qty} {quoteForm.material}</strong> has been saved. Suppliers will contact you on <strong>{quoteForm.phone}</strong> within 2 hours.</p>
-              <button onClick={() => { setQuoteSubmitted(false); setQuoteForm(defaultQuote); }} style={{ padding:"9px 20px", background:"#1D9E75", color:"#fff", border:"none", borderRadius:"8px", fontWeight:"600", fontSize:"14px", cursor:"pointer" }}>Send another request</button>
-            </div>
-          )}
+          ))}
         </div>
       )}
 
-      {/* SUPPLIER REGISTRATION */}
-      {page === "supplier" && (
-        <div style={{ maxWidth:"600px", margin:"0 auto", padding:"24px 20px" }}>
-          <h2 style={{ fontSize:"18px", fontWeight:"700", marginBottom:"4px" }}>List your shop on Jenga Hub</h2>
-          <p style={{ fontSize:"14px", color:"#888", marginBottom:"20px" }}>Reach builders looking for materials near you. Free for the first 3 months.</p>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"10px", marginBottom:"24px" }}>
+      {/* SUPPLIER PAGE */}
+      {page==="supplier" && (
+        <div style={s.page}>
+          <div style={s.sectionTitle}>List your shop on Jenga Hub</div>
+          <p style={{fontSize:"14px",color:"#666",marginBottom:"20px"}}>Reach builders looking for materials in Thika. Free for the first 3 months.</p>
+
+          <div style={s.pricingGrid}>
             {[
-              { name:"Starter", price:"Free", sub:"3 months", feats:["Shop profile","Up to 10 products","Buyer inquiries"] },
-              { name:"Growth", price:"KES 2,500", sub:"/month", feats:["Unlimited products","Quote requests","Priority listing","Analytics"], featured:true },
-              { name:"Pro", price:"KES 5,000", sub:"/month", feats:["Featured placement","Bulk order leads","M-Pesa integration","Dedicated support"] },
-            ].map(plan => (
-              <div key={plan.name} style={{ background:"#fff", border: plan.featured ? "2px solid #1D9E75" : "1px solid #eee", borderRadius:"12px", padding:"14px" }}>
-                {plan.featured && <div style={{ fontSize:"11px", background:"#E1F5EE", color:"#0F6E56", padding:"2px 8px", borderRadius:"8px", display:"inline-block", marginBottom:"6px", fontWeight:"600" }}>Most popular</div>}
-                <div style={{ fontWeight:"600", fontSize:"13px", marginBottom:"3px" }}>{plan.name}</div>
-                <div style={{ fontSize:"18px", fontWeight:"700", color:"#1D9E75" }}>{plan.price} <span style={{ fontSize:"12px", color:"#888", fontWeight:"400" }}>{plan.sub}</span></div>
-                <div style={{ marginTop:"8px", fontSize:"12px", color:"#666", lineHeight:"1.9" }}>{plan.feats.map(f => <div key={f}>✓ {f}</div>)}</div>
-                <button onClick={() => showToast(`${plan.name} plan selected!`)} style={{ width:"100%", marginTop:"10px", padding:"7px", background:"#1D9E75", color:"#fff", border:"none", borderRadius:"8px", fontWeight:"600", fontSize:"12px", cursor:"pointer" }}>Select</button>
+              {name:"Starter",price:"Free",sub:"3 months",feats:["Shop profile","Up to 10 products","Buyer inquiries","Basic listing"],featured:false},
+              {name:"Growth",price:"KES 2,500",sub:"per month",feats:["Everything in Starter","Unlimited products","Quote requests","Priority listing","Analytics"],featured:true},
+              {name:"Pro",price:"KES 5,000",sub:"per month",feats:["Everything in Growth","Featured placement","Bulk order leads","M-Pesa integration","Dedicated support"],featured:false},
+            ].map(p=>(
+              <div key={p.name} style={s.pricingCard(p.featured)}>
+                {p.featured && <div style={{background:"#e1f5ee",color:"#0F6E56",fontSize:"11px",padding:"2px 8px",borderRadius:"8px",display:"inline-block",marginBottom:"8px"}}>Most popular</div>}
+                <div style={s.planName}>{p.name}</div>
+                <div style={s.planPrice}>{p.price} <span style={{fontSize:"12px",color:"#888",fontWeight:"400"}}>/ {p.sub}</span></div>
+                <div style={s.planFeat}>{p.feats.map(f=><div key={f}>✓ {f}</div>)}</div>
+                <button style={{...s.submitBtn,marginTop:"12px"}} onClick={()=>showToast("Registering for "+p.name+" plan!")}>Get started</button>
               </div>
             ))}
           </div>
-          {regStep === 1 ? (
-            <div style={{ background:"#fff", border:"1px solid #eee", borderRadius:"12px", padding:"20px" }}>
-              <div style={{ fontWeight:"700", fontSize:"15px", marginBottom:"16px" }}>Register your shop</div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px", marginBottom:"14px" }}>
-                <div>
-                  <label style={{ fontSize:"12px", color:"#888", fontWeight:"600", display:"block", marginBottom:"4px" }}>Shop name *</label>
-                  <input placeholder="e.g. Kamau Hardware" value={regForm.name} onChange={e => setRegForm({...regForm, name:e.target.value})} style={inp()} />
+
+          <div style={s.sectionTitle}>Register your shop</div>
+          <div style={s.regBox}>
+            <div style={s.steps}>
+              <div style={s.step(step>=1)}></div>
+              <div style={s.step(step>=2)}></div>
+              <div style={s.step(step>=3)}></div>
+            </div>
+            {step===1 && (
+              <>
+                <div style={s.formGrid}>
+                  <div style={s.formGroup}><label style={s.label}>Shop name</label><input style={s.input} placeholder="e.g. Kamau Hardware" /></div>
+                  <div style={s.formGroup}><label style={s.label}>Town</label><select style={s.input}><option>Thika</option><option>Ruiru</option><option>Juja</option></select></div>
+                  <div style={s.formGroup}><label style={s.label}>Phone number</label><input style={s.input} placeholder="07xx xxx xxx" /></div>
+                  <div style={s.formGroup}><label style={s.label}>WhatsApp number</label><input style={s.input} placeholder="07xx xxx xxx" /></div>
                 </div>
-                <div>
-                  <label style={{ fontSize:"12px", color:"#888", fontWeight:"600", display:"block", marginBottom:"4px" }}>Town *</label>
-                  <select value={regForm.town} onChange={e => setRegForm({...regForm, town:e.target.value})} style={inp()}>
-                    <option>Thika</option><option>Ruiru</option><option>Juja</option><option>Kitengela</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ fontSize:"12px", color:"#888", fontWeight:"600", display:"block", marginBottom:"4px" }}>Phone number *</label>
-                  <input placeholder="07xx xxx xxx" value={regForm.phone} onChange={e => setRegForm({...regForm, phone:e.target.value})} style={inp()} />
-                </div>
-                <div>
-                  <label style={{ fontSize:"12px", color:"#888", fontWeight:"600", display:"block", marginBottom:"4px" }}>WhatsApp number</label>
-                  <input placeholder="07xx xxx xxx" value={regForm.whatsapp} onChange={e => setRegForm({...regForm, whatsapp:e.target.value})} style={inp()} />
-                </div>
-              </div>
-              <div style={{ marginBottom:"16px" }}>
-                <label style={{ fontSize:"12px", color:"#888", fontWeight:"600", display:"block", marginBottom:"8px" }}>What materials do you sell? * (select all that apply)</label>
-                <div style={{ display:"flex", flexWrap:"wrap", gap:"8px" }}>
-                  {allMaterials.map(mat => (
-                    <button key={mat} onClick={() => toggleMaterial(mat)} style={{ padding:"6px 12px", borderRadius:"20px", border: regForm.materials.includes(mat) ? "1.5px solid #1D9E75" : "1px solid #ddd", background: regForm.materials.includes(mat) ? "#E1F5EE" : "#f9f9f9", color: regForm.materials.includes(mat) ? "#0F6E56" : "#555", fontSize:"12px", cursor:"pointer", fontWeight: regForm.materials.includes(mat) ? "600" : "400" }}>
-                      {regForm.materials.includes(mat) ? "✓ " : ""}{mat}
-                    </button>
+                <button style={s.submitBtn} onClick={()=>setStep(2)}>Continue →</button>
+              </>
+            )}
+            {step===2 && (
+              <>
+                <p style={{fontSize:"13px",color:"#666",marginBottom:"12px"}}>What materials do you sell?</p>
+                <div style={{display:"flex",flexWrap:"wrap",gap:"8px",marginBottom:"16px"}}>
+                  {["Cement","Sand","Ballast","Quarry stones","Steel","Timber","Roofing sheets","Paint","Tiles","Plumbing"].map(m=>(
+                    <span key={m} style={{padding:"6px 14px",borderRadius:"16px",border:"1px solid #ddd",fontSize:"13px",cursor:"pointer",background:"#f5f5f0"}}>{m}</span>
                   ))}
                 </div>
-                {regForm.materials.length > 0 && <div style={{ fontSize:"12px", color:"#1D9E75", marginTop:"8px", fontWeight:"600" }}>Selected: {regForm.materials.join(", ")}</div>}
-              </div>
-              <div style={{ background:"#FFF8E1", border:"1px solid #FFE082", borderRadius:"8px", padding:"12px", marginBottom:"14px", fontSize:"13px", color:"#7B5800" }}>
-                📌 Your default login PIN is <strong>1234</strong>. Please change it after your first login in the Supplier Dashboard.
-              </div>
-              <button onClick={submitReg} disabled={regLoading} style={{ width:"100%", padding:"11px", background:"#1D9E75", color:"#fff", border:"none", borderRadius:"8px", fontWeight:"700", fontSize:"14px", cursor:"pointer", opacity:regLoading?0.7:1 }}>
-                {regLoading ? "Submitting..." : "Submit registration →"}
-              </button>
-            </div>
-          ) : (
-            <div style={{ background:"#fff", border:"1px solid #eee", borderRadius:"12px", padding:"32px", textAlign:"center" }}>
-              <div style={{ fontSize:"48px", marginBottom:"12px" }}>🎉</div>
-              <h3 style={{ fontSize:"16px", fontWeight:"700", marginBottom:"6px" }}>Registration received!</h3>
-              <p style={{ fontSize:"14px", color:"#888", marginBottom:"8px" }}>Welcome to Jenga Hub! Your shop <strong>{regForm.name}</strong> has been listed.</p>
-              <p style={{ fontSize:"14px", color:"#888", marginBottom:"20px" }}>Login to your dashboard using your phone number and PIN: <strong>1234</strong></p>
-              <div style={{ display:"flex", gap:"8px", justifyContent:"center" }}>
-                <button onClick={() => { setRegStep(1); setRegForm(defaultReg); }} style={{ padding:"9px 20px", background:"#f5f5f5", color:"#555", border:"1px solid #ddd", borderRadius:"8px", fontWeight:"600", fontSize:"14px", cursor:"pointer" }}>Register another shop</button>
-                <button onClick={() => { setRegStep(1); setRegForm(defaultReg); setPage("dashboard"); }} style={{ padding:"9px 20px", background:"#1D9E75", color:"#fff", border:"none", borderRadius:"8px", fontWeight:"600", fontSize:"14px", cursor:"pointer" }}>Go to Dashboard →</button>
-              </div>
-            </div>
-          )}
+                <button style={s.submitBtn} onClick={()=>setStep(3)}>Continue →</button>
+              </>
+            )}
+            {step===3 && (
+              <>
+                <p style={{fontSize:"13px",color:"#666",marginBottom:"12px"}}>Add your first product and price</p>
+                <div style={s.formGrid}>
+                  <div style={s.formGroup}><label style={s.label}>Product name</label><input style={s.input} placeholder="e.g. Cement 50kg bag" /></div>
+                  <div style={s.formGroup}><label style={s.label}>Price (KES)</label><input style={s.input} type="number" placeholder="e.g. 820" /></div>
+                </div>
+                <button style={s.submitBtn} onClick={()=>showToast("Shop registered! Welcome to Jenga Hub 🎉")}>Submit registration →</button>
+              </>
+            )}
+          </div>
         </div>
       )}
 
-      {/* SUPPLIER DASHBOARD */}
-      {page === "dashboard" && (
-        <div style={{ maxWidth:"700px", margin:"0 auto", padding:"24px 20px" }}>
-          {!supplierUser ? (
-            <div style={{ background:"#fff", border:"1px solid #eee", borderRadius:"12px", padding:"32px", maxWidth:"400px", margin:"0 auto" }}>
-              <div style={{ fontSize:"32px", marginBottom:"12px", textAlign:"center" }}>🔐</div>
-              <h2 style={{ fontSize:"18px", fontWeight:"700", marginBottom:"4px", textAlign:"center" }}>Supplier Login</h2>
-              <p style={{ fontSize:"14px", color:"#888", marginBottom:"20px", textAlign:"center" }}>Log in to manage your shop and products</p>
-              <div style={{ display:"flex", flexDirection:"column", gap:"12px", marginBottom:"16px" }}>
-                <div>
-                  <label style={{ fontSize:"12px", color:"#888", fontWeight:"600", display:"block", marginBottom:"4px" }}>Phone number</label>
-                  <input placeholder="07xx xxx xxx" value={loginForm.phone} onChange={e => setLoginForm({...loginForm, phone:e.target.value})} style={inp()} />
-                </div>
-                <div>
-                  <label style={{ fontSize:"12px", color:"#888", fontWeight:"600", display:"block", marginBottom:"4px" }}>PIN</label>
-                  <input type="password" placeholder="Enter your PIN" value={loginForm.pin} onChange={e => setLoginForm({...loginForm, pin:e.target.value})} style={inp()} />
-                </div>
-              </div>
-              {loginError && <div style={{ background:"#FFF0F0", border:"1px solid #FFCCCC", borderRadius:"8px", padding:"10px 12px", fontSize:"13px", color:"#CC0000", marginBottom:"12px" }}>{loginError}</div>}
-              <button onClick={handleLogin} disabled={loginLoading} style={{ width:"100%", padding:"11px", background:"#1D9E75", color:"#fff", border:"none", borderRadius:"8px", fontWeight:"700", fontSize:"14px", cursor:"pointer", opacity:loginLoading?0.7:1 }}>
-                {loginLoading ? "Logging in..." : "Login →"}
-              </button>
-              <p style={{ fontSize:"12px", color:"#aaa", textAlign:"center", marginTop:"12px" }}>Default PIN is 1234. Contact Jenga Hub to reset your PIN.</p>
-            </div>
-          ) : (
-            <div>
-              {/* Dashboard header */}
-              <div style={{ background:"linear-gradient(135deg,#1D9E75,#0F6E56)", borderRadius:"12px", padding:"20px 24px", color:"#fff", marginBottom:"20px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                <div>
-                  <div style={{ fontSize:"18px", fontWeight:"700", marginBottom:"2px" }}>{supplierUser.name}</div>
-                  <div style={{ fontSize:"13px", opacity:"0.85" }}>📍 {supplierUser.town} · {supplierUser.phone}</div>
-                </div>
-                <button onClick={toggleOpen} style={{ padding:"8px 16px", borderRadius:"8px", border:"2px solid rgba(255,255,255,0.5)", background:"rgba(255,255,255,0.15)", color:"#fff", fontWeight:"600", fontSize:"13px", cursor:"pointer" }}>
-                  {supplierUser.open ? "🟢 Open — click to close" : "🔴 Closed — click to open"}
-                </button>
-              </div>
-
-              {dashLoading ? (
-                <div style={{ textAlign:"center", padding:"40px", color:"#999" }}>Loading your dashboard...</div>
-              ) : (
-                <>
-                  {/* Stats */}
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"12px", marginBottom:"20px" }}>
-                    <div style={{ background:"#fff", border:"1px solid #eee", borderRadius:"12px", padding:"16px", textAlign:"center" }}>
-                      <div style={{ fontSize:"28px", fontWeight:"700", color:"#1D9E75" }}>{dashProducts.length}</div>
-                      <div style={{ fontSize:"12px", color:"#888" }}>Products listed</div>
-                    </div>
-                    <div style={{ background:"#fff", border:"1px solid #eee", borderRadius:"12px", padding:"16px", textAlign:"center" }}>
-                      <div style={{ fontSize:"28px", fontWeight:"700", color:"#1D9E75" }}>{dashQuotes.length}</div>
-                      <div style={{ fontSize:"12px", color:"#888" }}>Buyer requests</div>
-                    </div>
-                    <div style={{ background:"#fff", border:"1px solid #eee", borderRadius:"12px", padding:"16px", textAlign:"center" }}>
-                      <div style={{ fontSize:"28px", fontWeight:"700", color: supplierUser.verified ? "#1D9E75" : "#999" }}>{supplierUser.verified ? "✓" : "⏳"}</div>
-                      <div style={{ fontSize:"12px", color:"#888" }}>{supplierUser.verified ? "Verified" : "Pending verification"}</div>
-                    </div>
-                  </div>
-
-                  {/* Products */}
-                  <div style={{ background:"#fff", border:"1px solid #eee", borderRadius:"12px", padding:"20px", marginBottom:"20px" }}>
-                    <div style={{ fontWeight:"700", fontSize:"15px", marginBottom:"16px" }}>My Products & Prices</div>
-                    {dashProducts.length === 0 && <div style={{ textAlign:"center", padding:"20px", color:"#999", fontSize:"14px" }}>No products yet. Add your first product below.</div>}
-                    {dashProducts.map(p => (
-                      <div key={p.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 0", borderBottom:"1px solid #f5f5f5" }}>
-                        <div>
-                          <div style={{ fontSize:"14px", fontWeight:"500" }}>{p.name}</div>
-                          <div style={{ fontSize:"13px", color:"#1D9E75", fontWeight:"600" }}>{p.price}</div>
-                        </div>
-                        <button onClick={() => deleteProduct(p.id)} style={{ padding:"4px 10px", borderRadius:"6px", border:"1px solid #ddd", background:"none", color:"#CC0000", fontSize:"12px", cursor:"pointer" }}>Remove</button>
-                      </div>
-                    ))}
-
-                    {/* Add product form */}
-                    <div style={{ marginTop:"16px", paddingTop:"16px", borderTop:"1px solid #f0f0f0" }}>
-                      <div style={{ fontWeight:"600", fontSize:"13px", marginBottom:"10px", color:"#888" }}>ADD NEW PRODUCT</div>
-                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr auto", gap:"8px", alignItems:"end" }}>
-                        <div>
-                          <label style={{ fontSize:"12px", color:"#888", fontWeight:"600", display:"block", marginBottom:"4px" }}>Product name</label>
-                          <input placeholder="e.g. Cement (Bamburi 50kg)" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name:e.target.value})} style={inp()} />
-                        </div>
-                        <div>
-                          <label style={{ fontSize:"12px", color:"#888", fontWeight:"600", display:"block", marginBottom:"4px" }}>Price</label>
-                          <input placeholder="e.g. KES 820" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price:e.target.value})} style={inp()} />
-                        </div>
-                        <button onClick={addProduct} disabled={addingProduct} style={{ padding:"9px 16px", background:"#1D9E75", color:"#fff", border:"none", borderRadius:"8px", fontWeight:"600", fontSize:"13px", cursor:"pointer", whiteSpace:"nowrap" }}>
-                          {addingProduct ? "..." : "+ Add"}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Recent quote requests */}
-                  <div style={{ background:"#fff", border:"1px solid #eee", borderRadius:"12px", padding:"20px" }}>
-                    <div style={{ fontWeight:"700", fontSize:"15px", marginBottom:"16px" }}>Recent Buyer Requests</div>
-                    {dashQuotes.length === 0 && <div style={{ textAlign:"center", padding:"20px", color:"#999", fontSize:"14px" }}>No buyer requests yet.</div>}
-                    {dashQuotes.map(q => (
-                      <div key={q.id} style={{ padding:"12px 0", borderBottom:"1px solid #f5f5f5" }}>
-                        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"4px" }}>
-                          <div style={{ fontWeight:"600", fontSize:"14px" }}>{q.quantity} {q.material}</div>
-                          <a href={`tel:${q.phone}`} style={{ fontSize:"12px", color:"#1D9E75", fontWeight:"600", textDecoration:"none" }}>📞 {q.phone}</a>
-                        </div>
-                        <div style={{ fontSize:"12px", color:"#888" }}>📍 {q.location} {q.notes && `· ${q.notes}`}</div>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {toast && (
-        <div style={{ position:"fixed", bottom:"20px", right:"20px", background:"#1D9E75", color:"#fff", padding:"10px 18px", borderRadius:"8px", fontSize:"13px", fontWeight:"500", zIndex:999 }}>
-          {toast}
-        </div>
-      )}
+      {toast && <div style={s.toast}>{toast}</div>}
     </div>
   );
 }
